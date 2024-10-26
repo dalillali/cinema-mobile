@@ -1,61 +1,61 @@
+import React, { useEffect, useState } from 'react';
 import {
   StatusBar,
   StyleSheet,
   View,
-  TextInput,
   Text,
   Image,
-  ScrollView,
-  TouchableOpacity,
-  Pressable,
   SectionList,
   FlatList,
-} from "react-native";
-import React, { useEffect, useState } from "react";
-import Greeting from "../components/Greeting";
+  Pressable,
+} from 'react-native';
+import Greeting from '../components/Greeting';
 
-const HomeScreen = ({ navigation }) => {
-  const [movies, setMovies] = useState([]);
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
 
+const HomeScreen = ({ navigation, route }) => {
+  const { userId } = route.params;
+  const [sections, setSections] = useState([]);
+  console.log(userId);
   useEffect(() => {
-    fetch("http://192.168.1.102:8080/movies")
-      .then((response) => response.json())
-      .then((data) => setMovies(data))
-      .catch((error) => alert(error));
+    const fetchData = async () => {
+      try {
+        const response = await fetch("http://192.168.1.102:8080/movies");
+        const movies = await response.json();
+        const categoryMap = new Map();
+        movies.forEach((movie) => {
+          movie.categories.forEach((category) => {
+            const existing = categoryMap.get(category.name) || [];
+            categoryMap.set(category.name, [...existing, movie]);
+          });
+        });
+        const newSections = Array.from(categoryMap, ([title, data]) => ({
+          title, 
+          data: shuffleArray([...data]) // Shuffle movies in each category
+        }));
+        setSections(newSections);
+      } catch (error) {
+        alert(error);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const sections = [
-    {
-      title: "Most Popular Movies",
-      data: movies,
-    },
-    {
-      title: "Action",
-      data: movies,
-    },
-    {
-      title: "Drama",
-      data: movies,
-    },
-    {
-      title: "Comedy",
-      data: movies,
-    },
-    {
-      title: "Adventure",
-      data: movies,
-    },
-  ];
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#18171C" />
       <Greeting />
-
-
       <SectionList
-        showsVerticalScrollIndicator = {false}
+        showsVerticalScrollIndicator={false}
         sections={sections}
-        renderItem={(item) => {
+        renderItem={({ item }) => {
           return null;
         }}
         renderSectionHeader={({ section }) => (
@@ -64,22 +64,22 @@ const HomeScreen = ({ navigation }) => {
             <FlatList
               data={section.data}
               horizontal
+              showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => (
                 <Pressable
-                  onPress={() => navigation.navigate("Movie", { id: item.id })}
-                >
+                  onPress={() => navigation.navigate("MovieDetails", { id: item.id })}
+                  style={{ marginRight: 7 }}>
                   <Image
                     style={styles.featuredMovie}
-                    source={{
-                      uri: item.cover,
-                    }}
+                    source={{ uri: item.cover }}
                   />
                 </Pressable>
               )}
+              keyExtractor={(item) => `movie-${item.id}`}
             />
           </>
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `section-${index}-${item.id}`}
       />
     </View>
   );
@@ -93,21 +93,6 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#18171C",
   },
-  header: {
-    color: "#F7BB0D",
-  },
-  search: {
-    backgroundColor: "#28262F",
-    borderRadius: 8,
-    paddingVertical: 7,
-    width: "95%",
-    alignSelf: "center",
-    marginTop: 30,
-    marginBottom: 20,
-    paddingLeft: 20,
-    fontSize: 14,
-    color: "white",
-  },
   sectionTitle: {
     color: "white",
     fontSize: 20,
@@ -119,6 +104,5 @@ const styles = StyleSheet.create({
     height: 260,
     width: 197,
     borderRadius: 8,
-    marginRight: 7,
   },
 });

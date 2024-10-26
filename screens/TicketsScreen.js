@@ -1,74 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, View, TouchableOpacity, Image, SafeAreaView, FlatList, Pressable } from 'react-native';
+import { Modal, StyleSheet, Text, View, TouchableOpacity, Image, SafeAreaView, FlatList, ActivityIndicator  } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from 'react-native-qrcode-svg';
 
-const DATA = [
-  {
-    id: '1',
-    title: 'Dune: Part Two',
-    cover: "https://moviecovers.com/DATA/zipcache/DUNE%20%20%20DEUXIEME%20PARTIE%20(2024).jpg",
-    minAge: 13,
-    rating: 8.8,
-    time: "2h 57m",
-    type: "VIP",
-    movieDate:'10 Sep 2024',
-    movieTime: '11:30',
-    cost: '75 MAD'
-  },
-  {
-    id: '2',
-    title: 'Inception',
-    cover: "https://moviecovers.com/DATA/zipcache/INCEPTION%20(2010).jpg",
-    minAge: 13,
-    rating: 8.8,
-    time: "2h 57m",
-    type: "Standard",
-    movieDate:'10 Sep 2024',
-    movieTime: '11:30',
-    cost: '75 MAD'
-  },
-  {
-    id: '4',
-    title: 'Interstellar',
-    cover: "https://moviecovers.com/DATA/zipcache/INTERSTELLAR%20(2014).jpg",
-    minAge: 13,
-    rating: 8.6,
-    time: "2h 57m",
-    type: "Orchestre",
-    movieDate:'10 Sep 2024',
-    movieTime: '11:30',
-    cost: '75 MAD'
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const options = { day: 'numeric', month: 'long', year: 'numeric' };
+  return date.toLocaleDateString('en-GB', options);
+};
 
-  },
-  {
-    id: '5',
-    title: 'Blade Runner 2049',
-    cover: "https://moviecovers.com/DATA/zipcache/BLADE%20RUNNER%202049%20(2017).jpg",
-    minAge: 15,
-    rating: 8.0,
-    time: "2h 57m",
-    type: "Orchestre",
-    movieDate:'10 Sep 2024',
-    movieTime: '11:30',
-    cost: '75 MAD'
-  },
-];
+// Function to format the time string
+const formatTime = (timeString) => {
+  const time = new Date(`1970-01-01T${timeString}`);
+  const options = { hour: '2-digit', minute: '2-digit' };
+  return time.toLocaleTimeString('en-US', options);
+};
 
-const Item = ({ movie, onPress }) => (
-  <TouchableOpacity style={styles.item} onPress={() => onPress(movie)}>
-    <Image source={{ uri: movie.cover }} style={styles.cover} />
+const Item = ({ reservation, onPress }) => (
+  <TouchableOpacity style={styles.item} onPress={() => onPress(reservation)}>
+    <Image source={{ uri: reservation.movie.cover }} style={styles.cover} />
     <View style={styles.info}>
-      <View style={{flex: 1, justifyContent: 'space-evenly'}}>
-        <Text style={styles.title}>{movie.title}</Text>
-        <View style={styles.timeAndAge}>
-          <Text style={styles.details}>{movie.time}</Text>
-          <Ionicons name="ellipse" size={5} color="#F7BB0D" style={{marginHorizontal: 10}}/>
-          <Text style={styles.details}>PG-{movie.minAge}</Text>
-        </View>
-        <Text style={styles.details}><Ionicons name="star" size={13} color="#F7BB0D" style={{marginHorizontal: 10}}/> {movie.rating}/10</Text>
+      <Text style={styles.title}>{reservation.movie.title}</Text>
+      <View style={styles.timeAndAge}>
+        <Text style={styles.details}>{formatDate(reservation.projectionDate)}</Text>
+        <Ionicons name="ellipse" size={5} color="#F7BB0D" style={{marginHorizontal: 10}}/>
+        <Text style={styles.details}>{formatTime(reservation.projectionTime)}</Text>
+        <Ionicons name="ellipse" size={5} color="#F7BB0D" style={{marginHorizontal: 10}}/>
+        <Text style={styles.details}>PG-{reservation.movie.minAge}</Text>
       </View>
-      
+      <Text style={styles.details}>
+        <Ionicons name="star" size={13} color="#F7BB0D" style={{marginHorizontal: 10}}/> {reservation.movie.rating}/10
+      </Text>
     </View>
     <View style={styles.qrCodeIcon}>
       <Ionicons name="qr-code-outline" size={30} color="#F7BB0D" />
@@ -76,13 +38,17 @@ const Item = ({ movie, onPress }) => (
   </TouchableOpacity>
 );
 
-const TicketsScreen = () => {
+const TicketsScreen = ({route}) => {
+  const { userId } = route.params;
+  console.log(userId);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMovie, setSelectedMovie] = useState(null);
-  const [tickets, setTickets] = useState([]);
+  const [selectedReservation, setSelectedReservation] = useState(null);
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
 
-  const openModal = (movie) => {
-    setSelectedMovie(movie);
+  const openModal = (reservation) => {
+    setSelectedReservation(reservation);
     setModalVisible(true);
   };
 
@@ -90,24 +56,38 @@ const TicketsScreen = () => {
     setModalVisible(false);
   };
 
-
   useEffect(() => {
-    fetch("http://192.168.1.102:8080/user/reservations")
+    setLoading(true);
+    fetch(`http://192.168.1.102:8080/api/reservations/user/${userId}`) // Assuming user ID is 1 for example purposes
       .then((response) => response.json())
-      .then((data) => setTickets(data))
-      .catch((error) => alert(error));
+      .then((data) => setReservations(data))
+      .catch((error) => alert("Failed to fetch reservations: " + error));
+      setLoading(false);
   }, []);
 
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centeredView]}>
+        <ActivityIndicator size="large" color="#F7BB0D" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.headerText}>Tickets</Text>
-      <FlatList
-      showsVerticalScrollIndicator = {false}
-        data={DATA}
-        renderItem={({ item }) => <Item movie={item} onPress={openModal} />}
-        keyExtractor={item => item.id}
-      />
+      {loading ? (
+        <View style={[styles.container, styles.centeredView]}>
+          <ActivityIndicator size="large" color="#F7BB0D" />
+        </View>
+      ) : (
+        <FlatList
+          showsVerticalScrollIndicator={false}
+          data={reservations}
+          renderItem={({ item }) => <Item reservation={item} onPress={openModal} />}
+          keyExtractor={item => item.id.toString()}
+        />
+      )}
       <Modal
         animationType="slide"
         transparent={true}
@@ -116,24 +96,29 @@ const TicketsScreen = () => {
       >
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            {selectedMovie && (
+            {selectedReservation && (
               <>
-                <Image source={{ uri: selectedMovie.cover }} style={styles.modalCover} />
-                <Text style={styles.modalTitle}>{selectedMovie.title}</Text>
+                <Image source={{ uri: selectedReservation.movie.cover }} style={styles.modalCover} />
+                <Text style={styles.modalTitle}>{selectedReservation.movie.title}</Text>
                 <View style={styles.modalTicketInfos}>
                   <View style={styles.modalDateAndCost}>
-                    <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Date:</Text> {selectedMovie.movieDate}</Text>
-                    <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Cost:</Text> {selectedMovie.cost}</Text>
+                    <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Date:</Text> {formatDate(selectedReservation.projectionDate)}</Text>
+                    <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Cost:</Text> {selectedReservation.price} $</Text>
                   </View>
                   <View style={styles.modalDateAndCost}>
-                    <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Time:</Text> {selectedMovie.movieTime}</Text>
-                    <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Type:</Text> {selectedMovie.type}</Text>
+                    <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Time:</Text> {formatTime(selectedReservation.projectionTime)}</Text>
+                    <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Type:</Text> {selectedReservation.seatType}</Text>
                   </View>
                 </View>
+                <Text style={styles.modalText}><Text style={styles.modalTextTitle}>Number of Tickets: </Text> {selectedReservation.numberOfTickets}</Text>
                 <QRCode value={JSON.stringify({
-                      id: selectedMovie.id,
-                      title: selectedMovie.title,
-                      releaseDate: selectedMovie.releaseDate
+                      id: selectedReservation.id,
+                      title: selectedReservation.movie.title,
+                      date: selectedReservation.projectionDate,
+                      time: selectedReservation.projectionTime,
+                      price: selectedReservation.price,
+                      seatType: selectedReservation.seatType,
+                      numberOfTickets: selectedReservation.numberOfTickets
                     })} 
                     size={125} 
                     style={styles.qrCode}
@@ -177,7 +162,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     backgroundColor: '#232226',
-
   },
   cover: {
     width: 120,
@@ -196,6 +180,7 @@ const styles = StyleSheet.create({
   timeAndAge:{
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 20,
   },
   info: {
     flex: 1,
@@ -204,6 +189,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 20,
   },
   details: {
     color: "white",

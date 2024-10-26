@@ -2,26 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, View, Image, ActivityIndicator, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-// Debounce function
-function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, delay]);
-
-    return debouncedValue;
-}
-
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearchQuery = useDebounce(searchQuery, 300); // Delay of 500ms
   const [movies, setMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -29,11 +11,11 @@ const SearchScreen = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    if (debouncedSearchQuery.length > 1) { // Only fetch if the query length is greater than 2
+    if (searchQuery.length > 1) { // Only fetch if the query length is greater than 2
       setHasSearched(true);
-      fetchMovies(debouncedSearchQuery);
+      fetchMovies(searchQuery);
     }
-  }, [debouncedSearchQuery]); // Effect runs on change in debouncedSearchQuery
+  }, [searchQuery]); // Effect runs on change in searchQuery
 
   const fetchMovies = async (title) => {
     setIsLoading(true);
@@ -58,7 +40,7 @@ const SearchScreen = () => {
 
   const renderItem = ({ item }) => (
     <View style={styles.movieItem}>
-      <Pressable onPress={() => navigation.navigate("Movie", { id: item.id })}>
+      <Pressable onPress={() => navigation.navigate("MovieDetails", { id: item.id })}>
         <Image
           style={styles.featuredMovie}
           source={{ uri: item.cover }}
@@ -93,7 +75,8 @@ const SearchScreen = () => {
             keyExtractor={item => item.id.toString()}
             numColumns={2}
             contentContainerStyle={styles.movieContainer}
-            showsVerticalScrollIndicator = {false}          />
+            showsVerticalScrollIndicator={false}
+          />
         )
       ) : (
         // Display this message when no search has been performed yet
@@ -158,4 +141,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   }
 });
-

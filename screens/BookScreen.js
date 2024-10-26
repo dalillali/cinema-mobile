@@ -32,7 +32,7 @@ const benefits = [
 
 
 const BookScreen = ({ route }) => {
-  const { id, cover } = route.params;
+  const { id, cover, userId } = route.params;
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTimeIndex, setSelectedTimeIndex] = useState(0);
   const [selectedSeatType, setSelectedSeatType] = useState('Standard');
@@ -157,13 +157,15 @@ const BookScreen = ({ route }) => {
             day: '2-digit', month: 'short', year: 'numeric'
           }).replace(/ /g, ' ');
 
-          navigation.navigate("Payment", {
+          navigation.navigate("PaymentInfo", {
             id: id,
+            userId: userId,
             cover: cover,
             date: formattedDate,
             time: ['11:30', '14:30', '17:30'][selectedTimeIndex],
             seatType: selectedSeatType,
-            ticketCount: ticketCount
+            ticketCount: ticketCount,
+            userId: userId,
           });
         }}
       >

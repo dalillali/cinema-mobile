@@ -88,13 +88,14 @@ const MovieScreen = ({ route }) => {
           />
           <View style={styles.movieTitleRating}>
             <View>
-              <Text style={styles.movieTitleText}>{movie.titre}</Text>
+              <Text style={styles.movieTitleText}>{movie.title}</Text>
               <View style={styles.categories}>
-                <Text style={{color: 'white', marginRight: 5, fontWeight: '300'}}>Action</Text>
-                <Ionicons name={'ellipse'} size={5} color={'#F7BB0D'} />
-                <Text style={{color: 'white', marginHorizontal: 5, fontWeight: '300'}}>Drama</Text>
-                <Ionicons name={'ellipse'} size={5} color={'#F7BB0D'} />
-                <Text style={{color: 'white', marginHorizontal: 5, fontWeight: '300'}}>Comedy</Text>
+                {movie.categories.map((category, index) => (
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ color: 'white', marginRight: 5, fontWeight: '300' }}>{"  "+category.name }</Text>
+                    {index !== movie.categories.length - 1 && <Ionicons name={'ellipse'} size={5} color={'#F7BB0D'} />}
+                  </View>
+                ))}
               </View>
             </View>
             
@@ -111,7 +112,9 @@ const MovieScreen = ({ route }) => {
           </View>
           <View style={styles.movieInf}>
             <Ionicons name={'calendar-outline'} size={16} color={'#F7BB0D'} />
-            <Text style={{color: 'white', fontSize: 14, marginHorizontal: 5}}>{new Date(movie.releaseDate).getFullYear()}</Text>
+            <Text style={{color: 'white', fontSize: 14, marginHorizontal: 5}}>
+            {movie.releaseDate.split('-')[2]}
+          </Text>
           </View>
           <View style={styles.movieInf}>
             <Ionicons name={'hourglass-outline'} size={16} color={'#F7BB0D'} />
@@ -135,7 +138,7 @@ const MovieScreen = ({ route }) => {
             onChangeState={onStateChange}
           />
         </View>
-        <Pressable style={styles.butTicketButton} onPress={()=>navigation.navigate("Booking", {id: id, cover: movie.cover,})}>
+        <Pressable style={styles.butTicketButton} onPress={()=>navigation.navigate("BookingTickets", {id: id, cover: movie.cover,})}>
           <Text style={{color: '#18171C', fontSize: 18, fontWeight: '600'}}>Buy Tickets</Text>
         </Pressable>
         </ScrollView>
